@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calc">
+<title>Calc Live</title>
+<style>
+:root{--bg:#f2f2f0;--fg:#1c1c1e;--mut:#8a8a8e;--key:#fff;--op:#dcdce0;--acc:#ff9500;--line:#b5b5ba;--card:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--fg:#f2f2f7;--mut:#8e8e93;--key:#2c2c2e;--op:#48484a;--line:#5a5a5e;--card:#1c1c1e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000;--fg:#f2f2f7;--mut:#8e8e93;--key:#2c2c2e;--op:#48484a;--line:#5a5a5e;--card:#1c1c1e;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg)}
+body{font:16px -apple-system,system-ui,"Segoe UI",sans-serif;display:flex;flex-direction:column;overflow:hidden}
+#tabs{display:flex;gap:6px;padding:8px 10px 0}
+#tabs button{flex:1;padding:8px;border:0;border-radius:10px;background:transparent;color:var(--mut);font-size:15px;font-weight:600}
+#tabs button.on{background:var(--card);color:var(--fg)}
+#v1{display:flex;flex-direction:column;flex:1;min-height:0}
+#tape{flex:1;overflow-y:auto;padding:6px 16px;text-align:right}
+.it{padding:8px 0;border-top:2px dotted var(--line)}
+.it:first-child{border-top:0}
+.it .e{color:var(--mut);font-size:15px;word-break:break-all}
+.it .r{font-size:24px}
+#disp{padding:6px 16px 4px;text-align:right;border-top:2px dotted var(--line)}
+#ex{font-size:34px;min-height:44px;word-break:break-all;line-height:1.2}
+#ex .ph{color:var(--mut)}
+.cr{display:inline-block;width:2px;height:.95em;background:var(--acc);vertical-align:-.1em;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+#pv{color:var(--mut);height:20px;font-size:16px}
+#keys{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:6px 10px 10px}
+#keys button{border:0;border-radius:14px;height:clamp(42px,7vh,56px);font-size:22px;background:var(--key);color:var(--fg);touch-action:manipulation}
+#keys button:active{filter:brightness(.8)}
+#keys .op{background:var(--op);font-size:19px}
+#keys .ac{background:var(--acc);color:#fff;font-size:26px}
+#keys .rst{background:#d93a30;color:#fff;font-size:15px;font-weight:600}
+#keys .eqk{background:var(--acc);color:#fff;font-size:28px}
+#keys .w2{grid-column:span 2}
+#keys .w3{grid-column:span 3}
+#v2{flex:1;overflow-y:auto;padding:10px;-webkit-overflow-scrolling:touch}
+.card{background:var(--card);border-radius:16px;padding:12px;margin-bottom:10px}
+.card h3{margin:0 0 8px;font-size:14px;color:var(--mut);font-weight:600}
+.row{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.card input,.card select{font-size:17px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-width:0;flex:1}
+.card button{font-size:15px;padding:8px 10px;border-radius:10px;border:0;background:var(--op);color:var(--fg)}
+#res{font-size:26px;text-align:right;margin:6px 0}
+.ln{display:flex;justify-content:space-between;padding:5px 0;border-top:1px dotted var(--line)}
+.ln:first-child{border-top:0}
+.ln b{font-weight:600}
+.note{color:var(--mut);font-size:13px;margin-top:6px}
+.rt label{flex:0 0 auto;color:var(--mut)}
+</style>
+</head>
+<body>
+<div id="tabs"><button id="t1" class="on">Calculator</button><button id="t2">Convert</button></div>
+
+<section id="v1">
+  <div id="tape"></div>
+  <div id="disp"><div id="ex"></div><div id="pv"></div></div>
+  <div id="keys"></div>
+</section>
+
+<section id="v2" hidden>
+  <div class="card"><div class="row"><button id="rf">Refresh rates now</button></div><div class="note" id="st" style="margin:0">Waiting…</div></div>
+  <div class="card">
+    <h3>Currency</h3>
+    <div class="row"><input id="amt" inputmode="decimal" value="1"><select id="fr"></select><button id="sw">⇄</button><select id="to"></select></div>
+    <div id="res"></div>
+    <div class="row"><button id="useC">Use calculator result</button><button id="toC">Send to calculator</button></div>
+  </div>
+  <div class="card"><h3>Same amount in every currency</h3><div id="all"></div></div>
+  <div class="card">
+    <h3>Gold</h3>
+    <div class="row"><input id="gp" type="hidden"><select id="kt"><option value="24">24K</option><option value="22">22K</option><option value="21">21K</option><option value="18">18K</option></select><input id="gpm" inputmode="decimal" value="0" style="flex:0 0 76px" title="Local premium %" placeholder="+%"></div>
+    <div class="row"><input id="gw" inputmode="decimal" value="10"><span class="note" style="margin:0">grams · box above right = local premium %</span></div>
+    <div id="gout"></div>
+  </div>
+  <div class="card rt">
+    <h3>Rates (units per 1 BHD)</h3>
+    <div id="rates"></div>
+    <div class="note" id="rnote"></div>
+    <div class="row" style="margin-top:8px"><button id="rr">Restore starter rates</button></div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i)};
+function ld(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+
+/* ---------- Calculator ---------- */
+var S=ld("c_state",{h:[],x:"",p:0});
+var hist=Array.isArray(S.h)?S.h:[], ex=typeof S.x==="string"?S.x:"", pos=Math.min(S.p||0,ex.length), fresh=false, hi=null, rsT=0;
+var OPS="+−×÷";
+
+function evalX(s){
+  var t=s.replace(/\s/g,""),i=0;
+  var o=(t.match(/\(/g)||[]).length-(t.match(/\)/g)||[]).length;
+  while(o-->0)t+=")";
+  function num(){var m=/^(\d*\.?\d+|\d+\.)/.exec(t.slice(i));if(!m)throw 0;i+=m[0].length;return parseFloat(m[0])}
+  function prim(){if(t[i]==="("){i++;var v=add().v;if(t[i]!==")")throw 0;i++;return v}return num()}
+  function post(){var v=prim(),p=false;while(t[i]==="%"){i++;v/=100;p=true}return{v:v,p:p}}
+  function un(){if(t[i]==="-"||t[i]==="−"){i++;var r=un();return{v:-r.v,p:r.p}}return post()}
+  function mul(){var a=un();while(t[i]==="×"||t[i]==="÷"){var op=t[i++],b=un();a={v:op==="×"?a.v*b.v:a.v/b.v,p:false}}return a}
+  function add(){var a=mul();while(t[i]==="+"||t[i]==="-"||t[i]==="−"){var op=t[i++],b=mul(),bv=b.p?a.v*b.v:b.v;a={v:op==="+"?a.v+bv:a.v-bv,p:false}}return a}
+  var r=add();if(i<t.length||!isFinite(r.v))throw 0;return r.v;
+}
+function rnd(v){return parseFloat(v.toPrecision(12))}
+function fmt(v){return rnd(v).toLocaleString("en-US",{maximumFractionDigits:10})}
+function raw(v){return rnd(v).toLocaleString("en-US",{useGrouping:false,maximumFractionDigits:10})}
+
+function save(){sv("c_state",{h:hist,x:ex,p:pos})}
+function drawTape(){
+  $("tape").innerHTML=hist.map(function(h,i){
+    return '<div class="it"><div class="e" data-i="'+i+'" data-k="e">'+esc(h.e)+'</div><div class="r" data-i="'+i+'" data-k="r">= '+esc(h.r)+'</div></div>';
+  }).join("");
+  $("tape").scrollTop=$("tape").scrollHeight;
+}
+function draw(){
+  $("ex").innerHTML=esc(ex.slice(0,pos))+'<i class="cr"></i>'+(ex?esc(ex.slice(pos)):'<span class="ph">0</span>');
+  var pv="";
+  if(ex&&!fresh&&/[+−×÷%]/.test(ex.replace(/^−/,""))){try{pv="= "+fmt(evalX(ex))}catch(e){}}
+  $("pv").textContent=pv;
+  save();
+}
+function ins(s){
+  if(fresh){if(/^[0-9.(]$/.test(s)){ex="";pos=0}fresh=false}
+  if(OPS.indexOf(s)>-1){
+    if(!ex&&s!=="−"){if(!hist.length)return;ex=hist[hist.length-1].v;pos=ex.length}
+    if(pos>0&&OPS.indexOf(ex[pos-1])>-1&&!(s==="−"&&"×÷".indexOf(ex[pos-1])>-1)){ex=ex.slice(0,pos-1)+ex.slice(pos);pos--}
+  }
+  ex=ex.slice(0,pos)+s+ex.slice(pos);pos+=s.length;hi=null;draw();
+}
+function eq(){
+  if(!ex||/^[\d.]+$/.test(ex))return;
+  var v;try{v=evalX(ex)}catch(e){$("pv").textContent="Check the expression";return}
+  var r=raw(v);
+  hist.push({e:ex,r:fmt(v),v:r});
+  ex=r;pos=ex.length;fresh=true;hi=null;drawTape();draw();
+}
+function bs(){
+  if(fresh){ex="";pos=0;fresh=false}
+  else if(pos>0){ex=ex.slice(0,pos-1)+ex.slice(pos);pos--}
+  hi=null;draw();
+}
+function pm(){
+  fresh=false;
+  var i=pos,j=pos;
+  while(i>0&&/[\d.]/.test(ex[i-1]))i--;
+  while(j<ex.length&&/[\d.]/.test(ex[j]))j++;
+  if(i===j)return;
+  var pre=ex[i-1];
+  if((pre==="−"||pre==="-")&&(i-1===0||"(+−×÷".indexOf(ex[i-2])>-1)){ex=ex.slice(0,i-1)+ex.slice(i);pos--}
+  else{ex=ex.slice(0,i)+"−"+ex.slice(i);pos++}
+  draw();
+}
+function load(i){ex=hist[i].e;pos=ex.length;fresh=false}
+function act(k){
+  switch(k){
+    case"l":fresh=false;pos=Math.max(0,pos-1);draw();break;
+    case"r":fresh=false;pos=Math.min(ex.length,pos+1);draw();break;
+    case"u":if(!hist.length)break;hi=hi===null?hist.length-1:Math.max(0,hi-1);load(hi);draw();break;
+    case"d":if(hi===null)break;hi++;if(hi>=hist.length){hi=null;ex="";pos=0}else load(hi);draw();break;
+    case"c":ex="";pos=0;fresh=false;hi=null;draw();break;
+    case"bs":bs();break;
+    case"pm":pm();break;
+    case"=":eq();break;
+    case"rs":
+      var b=$("rsb");
+      if(rsT){clearTimeout(rsT);rsT=0;b.textContent="Reset";hist=[];ex="";pos=0;fresh=false;hi=null;drawTape();draw()}
+      else{b.textContent="Sure?";rsT=setTimeout(function(){rsT=0;b.textContent="Reset"},2500)}
+      break;
+    default:ins(k);
+  }
+}
+var K=[["◀","l","op"],["▶","r","op"],["▲","u","op"],["▼","d","op"],["Reset","rs","rst"],
+["C","c","op"],["(","(","op"],[")",")","op"],["%","%","op"],["÷","÷","ac"],
+["7"],["8"],["9"],["⌫","bs","op"],["×","×","ac"],
+["4"],["5"],["6"],["±","pm","op"],["−","−","ac"],
+["1"],["2"],["3"],["."],["+","+","ac"],
+["0","0","w2"],["=","=","eqk w3"]];
+$("keys").innerHTML=K.map(function(k){
+  return '<button data-k="'+(k[1]||k[0])+'"'+(k[1]==="rs"?' id="rsb"':'')+' class="'+(k[2]||"")+'">'+k[0]+'</button>';
+}).join("");
+$("keys").addEventListener("click",function(e){var b=e.target.closest("button");if(b)act(b.getAttribute("data-k"))});
+$("tape").addEventListener("click",function(e){
+  var t=e.target.closest("[data-i]");if(!t)return;
+  var h=hist[+t.getAttribute("data-i")];
+  if(t.getAttribute("data-k")==="e"){ex=h.e;pos=ex.length;fresh=false;draw()}else ins(h.v);
+});
+drawTape();draw();
+
+/* ---------- Tabs ---------- */
+function tab(n){
+  $("v1").hidden=n!==1;$("v2").hidden=n!==2;
+  $("t1").className=n===1?"on":"";$("t2").className=n===2?"on":"";
+  if(n===2)calc2();
+}
+$("t1").onclick=function(){tab(1)};$("t2").onclick=function(){tab(2)};
+
+/* ---------- Converter ---------- */
+var CODES=["BHD","PKR","CAD","GBP","USD"];
+var DEF={BHD:1,USD:2.659,PKR:748,CAD:3.63,GBP:2.0};
+var DIG={BHD:3,PKR:0,CAD:2,GBP:2,USD:2};
+var R=ld("c_rates",null)||JSON.parse(JSON.stringify(DEF));
+var GP=ld("c_gold2",3900);
+var MSS=ld("c_mss",null);
+var RD=ld("c_rdate","starter values, not live");
+function cf(c,v){
+  if(!isFinite(v))return "–";
+  return v.toLocaleString("en-US",{minimumFractionDigits:DIG[c],maximumFractionDigits:DIG[c]});
+}
+function cv(a,f,t){return a/R[f]*R[t]}
+function num(id){var v=parseFloat($(id).value.replace(/,/g,""));return isFinite(v)?v:0}
+var opts=CODES.map(function(c){return '<option>'+c+'</option>'}).join("");
+$("fr").innerHTML=opts;$("to").innerHTML=opts;
+$("fr").value="BHD";$("to").value="PKR";
+$("gp").value=GP;
+
+function calc2(){
+  var a=num("amt"),f=$("fr").value,t=$("to").value;
+  $("res").textContent=cf(t,cv(a,f,t))+" "+t;
+  $("all").innerHTML=CODES.map(function(c){
+    return '<div class="ln"><span>'+c+'</span><b>'+cf(c,cv(a,f,c))+'</b></div>';
+  }).join("");
+  var gc="BHD",usd=num("gp"),kt=$("kt").value,w=num("gw"),pr=1+num("gpm")/100;
+  var ms=MSS&&MSS[kt]>0&&Date.now()-MSS.t<864e5?MSS:null;
+  var bg=ms?ms[kt]*pr:cv(usd,"USD","BHD")/31.1035*(parseFloat(kt)/24)*pr;
+  var g=cv(bg,"BHD",gc),oz=g*31.1035,tola=g*11.6638;
+  var src=ms?"Source: MSS Gold Bahrain, "+new Date(ms.t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"Source: international spot price (MSS not available)";
+  $("gout").innerHTML=
+    '<div class="ln"><span>Per gram</span><b>'+cf(gc,g)+' '+gc+'</b></div>'+
+    '<div class="ln"><span>Per tola</span><b>'+cf(gc,tola)+' '+gc+'</b></div>'+
+    '<div class="ln"><span>Per ounce</span><b>'+cf(gc,oz)+' '+gc+'</b></div>'+
+    '<div class="ln"><span>'+(w||0)+' g total</span><b>'+cf(gc,g*w)+' '+gc+'</b></div>'+'<div class="note">'+src+'</div>';
+  sv("c_gold2",usd);
+}
+["amt","fr","to","gp","kt","gw","gpm"].forEach(function(id){$(id).addEventListener("input",calc2);$(id).addEventListener("change",calc2)});
+$("sw").onclick=function(){var a=$("fr").value;$("fr").value=$("to").value;$("to").value=a;calc2()};
+$("useC").onclick=function(){
+  var v=null;try{if(ex)v=evalX(ex)}catch(e){}
+  if(v===null&&hist.length)v=parseFloat(hist[hist.length-1].v);
+  if(v!==null&&isFinite(v)){$("amt").value=raw(v);calc2()}
+};
+$("toC").onclick=function(){
+  var v=cv(num("amt"),$("fr").value,$("to").value);
+  fresh=false;ex=raw(Math.round(v*1000)/1000);pos=ex.length;fresh=true;draw();tab(1);
+};
+function drawRates(){
+  $("rates").innerHTML=CODES.filter(function(c){return c!=="BHD"}).map(function(c){
+    return '<div class="row"><label>1 BHD =</label><input data-c="'+c+'" inputmode="decimal" value="'+R[c]+'"><label>'+c+'</label></div>';
+  }).join("");
+  $("rnote").textContent="Rates: "+RD+". Updated automatically when you open the app. You can also type your own rate.";
+}
+$("rates").addEventListener("input",function(e){
+  var c=e.target.getAttribute("data-c"),v=parseFloat(e.target.value);
+  if(c&&v>0){R[c]=v;RD="edited "+new Date().toLocaleDateString();sv("c_rates",R);sv("c_rdate",RD);$("rnote").textContent="Rates: "+RD+". Updated automatically when you open the app. You can also type your own rate.";calc2()}
+});
+$("rr").onclick=function(){R=JSON.parse(JSON.stringify(DEF));RD="starter values, not live";sv("c_rates",R);sv("c_rdate",RD);drawRates();calc2()};
+drawRates();
+
+var last=0;
+function getMss(){
+  var c=new AbortController(),t=setTimeout(function(){c.abort()},8000);
+  return fetch("https://mssbars.com/",{signal:c.signal,cache:"no-store"}).then(function(r){clearTimeout(t);if(!r.ok)throw 0;return r.text()}).then(function(h){
+    var x=h.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<[^>]+>/g," "),re=/(18|21|22|24)K\s*BD\s*([\d.]+)/g,m,o={};
+    while((m=re.exec(x)))o[m[1]]=parseFloat(m[2]);
+    if(!(o[24]>0))throw 0;o.t=Date.now();return o});
+}
+function tj(url){var c=new AbortController(),t=setTimeout(function(){c.abort()},8000);return fetch(url,{signal:c.signal,cache:"no-store"}).then(function(r){clearTimeout(t);if(!r.ok)throw 0;return r.json()})}
+function getRates(){
+  return tj("https://open.er-api.com/v6/latest/BHD").then(function(j){if(!j.rates)throw 0;return j.rates})
+  .catch(function(){return tj("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/bhd.json").then(function(j){var o={},b=j.bhd;for(var k in b)o[k.toUpperCase()]=b[k];return o})});
+}
+function getGold(){
+  return tj("https://api.gold-api.com/price/XAU").then(function(j){if(!(j.price>0))throw 0;return j.price})
+  .catch(function(){return tj("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json").then(function(j){var p=j.xau&&j.xau.usd;if(!(p>0))throw 0;return p})});
+}
+function refresh(){
+  last=Date.now();$("st").textContent="Updating…";
+  var ok=[],bad=[];
+  var a=getRates().then(function(r){CODES.forEach(function(c){if(c!=="BHD"&&r[c]>0)R[c]=r[c]});R.BHD=1;sv("c_rates",R);ok.push("rates")}).catch(function(){bad.push("rates")});
+  var b=getGold().then(function(p){GP=p;$("gp").value=Math.round(p*100)/100;sv("c_gold2",GP);ok.push("gold")}).catch(function(){bad.push("gold")});
+  var m=getMss().then(function(o){MSS=o;sv("c_mss",MSS);ok.push("MSS")}).catch(function(){bad.push("MSS Gold")});
+  return Promise.all([a,b,m]).then(function(){
+    if(ok.length){RD="live "+new Date().toLocaleString();sv("c_rdate",RD)}
+    drawRates();calc2();
+    $("st").textContent=(ok.length?"Updated "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"Couldn’t connect")+(bad.length?" · couldn’t update "+bad.join(" and ")+" (showing saved values)":"");
+  });
+}
+$("rf").onclick=refresh;
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&Date.now()-last>300000)refresh()});
+refresh();
+})();
+</script>
+</body>
+</html>
